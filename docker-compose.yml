@@ -1,0 +1,33 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: job-aggregator-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - FASTAPI_PORT=8000
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./backend/app:/app/app
+    networks:
+      - job-aggregator-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: job-aggregator-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - job-aggregator-network
+
+networks:
+  job-aggregator-network:
+    driver: bridge
