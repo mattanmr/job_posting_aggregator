@@ -3,6 +3,7 @@ SerpAPI Google Jobs Connector
 Documentation: https://serpapi.com/google-jobs-api
 """
 import os
+import re
 import requests
 from typing import List, Optional
 from datetime import datetime
@@ -21,6 +22,56 @@ class SerpAPIJobsConnector(JobConnector):
         """
         self.api_key = api_key or os.getenv('SERPAPI_KEY')
         self.base_url = 'https://serpapi.com/search.json'
+    
+    @staticmethod
+    def _extract_education(text: str) -> Optional[str]:
+        """Extract education/diploma requirements from job description."""
+        if not text:
+            return None
+        
+        text_lower = text.lower()
+        
+        # Patterns for education requirements
+        education_patterns = [
+            (r"(phd|ph\.d\.|doctorate|doctoral)", "PhD/Doctorate"),
+            (r"(master'?s?|msc|m\.s\.|graduate degree)", "Master's Degree"),
+            (r"(bachelor'?s?|bs|b\.s\.|ba|b\.a\.|undergraduate degree|college degree)", "Bachelor's Degree"),
+            (r"(associate'?s?|aa|a\.a\.|as|a\.s\.)", "Associate's Degree"),
+            (r"(high school|secondary school|diploma|ged)", "High School Diploma"),
+        ]
+        
+        for pattern, degree in education_patterns:
+            if re.search(pattern, text_lower):
+                return degree
+        
+        return None
+    
+    @staticmethod
+    def _extract_experience(text: str) -> Optional[str]:
+        """Extract years of experience requirements from job description."""
+        if not text:
+            return None
+        
+        # Patterns for experience requirements
+        patterns = [
+            r"(\d+)\+?\s*(?:to|\-|or)\s*(\d+)\+?\s*years?",  # "3-5 years" or "3 to 5 years"
+            r"(\d+)\+?\s*years?",  # "3 years" or "3+ years"
+            r"minimum\s+of\s+(\d+)\+?\s*years?",  # "minimum of 3 years"
+            r"at least\s+(\d+)\+?\s*years?",  # "at least 3 years"
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, text.lower())
+            if match:
+                groups = match.groups()
+                if len(groups) == 2 and groups[1]:
+                    # Range found
+                    return f"{groups[0]}-{groups[1]} years"
+                else:
+                    # Single number found
+                    return f"{groups[0]}+ years"
+        
+        return None
         
     def search(
         self, 
@@ -147,6 +198,11 @@ class SerpAPIJobsConnector(JobConnector):
         if not job_url:
             job_url = job_data.get('share_link', '')
         
+        # Extract education and experience requirements
+        full_text = f"{full_description} {job_data.get('title', '')} {' '.join([h.get('title', '') + ' ' + ' '.join(h.get('items', [])) for h in job_highlights])}"
+        diploma = self._extract_education(full_text)
+        experience = self._extract_experience(full_text)
+        
         return JobPosting(
             title=job_data.get('title', 'N/A'),
             company=job_data.get('company_name', 'N/A'),
@@ -155,5 +211,7 @@ class SerpAPIJobsConnector(JobConnector):
             url=job_url,
             source='Google Jobs (via SerpAPI)',
             posted_date=posted_date,
-            salary=salary_str
+            salary=salary_str,
+            diploma_required=diploma,
+            years_experience=experience
         )

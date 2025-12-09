@@ -14,6 +14,8 @@ class JobPosting:
     source: str
     posted_date: Optional[datetime] = None
     salary: Optional[str] = None
+    diploma_required: Optional[str] = None
+    years_experience: Optional[str] = None
 
 
 class JobConnector:
