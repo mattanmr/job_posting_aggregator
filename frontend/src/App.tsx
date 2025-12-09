@@ -1,4 +1,7 @@
 import Search from "./components/Search";
+import KeywordManager from "./components/KeywordManager";
+import CollectionStatus from "./components/CollectionStatus";
+import CsvViewer from "./components/CsvViewer";
 
 export default function App() {
   return (
@@ -6,10 +9,29 @@ export default function App() {
       <header style={{ marginBottom: "32px", borderBottom: "2px solid #0066cc", paddingBottom: "16px" }}>
         <h1 style={{ margin: "0 0 8px 0", color: "#333" }}>Job Posting Aggregator</h1>
         <p style={{ margin: 0, color: "#666", fontSize: "14px" }}>
-          Search job postings from multiple sources in one place
+          Search job postings and set up automated collection with keyword management
         </p>
       </header>
-      <Search />
+
+      {/* Keyword Management Section */}
+      <section style={{ marginBottom: "20px" }}>
+        <KeywordManager />
+      </section>
+
+      {/* Collection Status Section */}
+      <section style={{ marginBottom: "20px" }}>
+        <CollectionStatus />
+      </section>
+
+      {/* CSV Viewer Section */}
+      <section style={{ marginBottom: "20px" }}>
+        <CsvViewer />
+      </section>
+
+      {/* Manual Search Section */}
+      <section>
+        <Search />
+      </section>
     </div>
   );
 }
