@@ -137,12 +137,22 @@ class SerpAPIJobsConnector(JobConnector):
                     for item in items[:3]:  # Limit to 3 items per section
                         full_description += f"• {item}\n"
         
+        # Get the actual job posting URL from apply_options (first one is usually the primary source)
+        job_url = ''
+        apply_options = job_data.get('apply_options', [])
+        if apply_options and len(apply_options) > 0:
+            job_url = apply_options[0].get('link', '')
+        
+        # Fallback to share_link if no apply options (though this is a Google Jobs link)
+        if not job_url:
+            job_url = job_data.get('share_link', '')
+        
         return JobPosting(
             title=job_data.get('title', 'N/A'),
             company=job_data.get('company_name', 'N/A'),
             location=location,
             description=full_description.strip(),
-            url=job_data.get('share_link') or job_data.get('apply_options', [{}])[0].get('link', ''),
+            url=job_url,
             source='Google Jobs (via SerpAPI)',
             posted_date=posted_date,
             salary=salary_str
