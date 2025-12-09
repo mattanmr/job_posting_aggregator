@@ -9,6 +9,7 @@ services:
     environment:
       - FASTAPI_PORT=8000
       - PYTHONUNBUFFERED=1
+      - SERPAPI_KEY=${SERPAPI_KEY:-}
     volumes:
       - ./backend/app:/app/app
     networks:

@@ -44,3 +44,6 @@ dist/
 .env
 .env.local
 .env.*.local
+
+# instructions
+instructions/
