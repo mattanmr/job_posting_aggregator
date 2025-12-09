@@ -11,6 +11,17 @@ A clean, minimal job posting aggregator with Python FastAPI backend and React/Ty
 
 ### Run with Docker Compose
 
+**Linux/Mac:**
+```bash
+./start.sh
+```
+
+**Windows (with WSL + Docker):**
+```powershell
+.\start.ps1
+```
+
+**Or manually:**
 ```bash
 docker-compose up --build
 ```
@@ -19,6 +30,11 @@ Then open:
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:8000
 - API Docs: http://localhost:8000/docs
+
+To stop:
+```bash
+docker-compose down
+```
 
 ### Local Development
 
