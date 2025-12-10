@@ -239,6 +239,7 @@ def trigger_collection_now() -> dict:
         serpapi = None
     
     all_jobs = []
+    job_keywords = {}  # Track which keyword each job came from
     keywords_collected = []
     
     for keyword in keywords:
@@ -256,16 +257,17 @@ def trigger_collection_now() -> dict:
             jobs = mock.search(keyword)
         
         if jobs:
+            job_keywords[keyword] = jobs  # Store jobs per keyword
             all_jobs.extend(jobs)
             keywords_collected.append({
                 "keyword": keyword,
                 "job_count": len(jobs)
             })
     
-    # Save all jobs to a single CSV file
+    # Save all jobs to a single CSV file with keyword tracking
     filename = None
     if all_jobs:
-        filename = save_jobs_to_csv(all_jobs)
+        filename = save_jobs_to_csv(all_jobs, job_keywords)
         log_collection(
             status="success",
             total_jobs=len(all_jobs),

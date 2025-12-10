@@ -100,20 +100,25 @@ def save_jobs_to_csv(jobs: List[JobPosting], job_keywords: Dict[str, List[JobPos
         'description'
     ]
     
-    # Create a mapping of job URLs to keywords for tracking
-    url_to_keyword = {}
+    # Create a mapping of job to keyword by tracking which job came from which keyword
+    # Use a combination of URL and company to uniquely identify jobs
+    job_to_keyword = {}
     if job_keywords:
         for keyword, keyword_jobs in job_keywords.items():
             for job in keyword_jobs:
-                url_to_keyword[job.url] = keyword
+                # Use URL as primary identifier, fallback to title+company combo
+                job_key = job.url if job.url else f"{job.title}_{job.company}"
+                if job_key not in job_to_keyword:  # Only set if not already seen
+                    job_to_keyword[job_key] = keyword
     
     with open(filepath, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         
         for job in jobs:
-            # Find the keyword for this job
-            keyword = url_to_keyword.get(job.url, 'Unknown')
+            # Find the keyword for this job using the same key generation logic
+            job_key = job.url if job.url else f"{job.title}_{job.company}"
+            keyword = job_to_keyword.get(job_key, 'Unknown')
             
             writer.writerow({
                 'keyword': keyword,
