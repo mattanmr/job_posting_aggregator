@@ -174,9 +174,33 @@ class SerpAPIJobsConnector(JobConnector):
                 if 'T' in posted_at or len(posted_at) == 10:  # ISO format or YYYY-MM-DD
                     posted_date = datetime.fromisoformat(posted_at.split('T')[0]) if 'T' in posted_at else datetime.strptime(posted_at, '%Y-%m-%d')
                 else:
-                    # If it's a relative date like "2 days ago", we can't convert it precisely
-                    # So we'll use the posted_at value as-is in the CSV
-                    posted_date = None
+                    # Try to parse relative dates like "2 days ago", "1 day ago", "Posted today", etc.
+                    from datetime import timedelta
+                    posted_lower = posted_at.lower()
+                    now = datetime.now()
+                    
+                    if 'today' in posted_lower or 'just now' in posted_lower:
+                        posted_date = now
+                    elif 'yesterday' in posted_lower:
+                        posted_date = now - timedelta(days=1)
+                    elif 'day' in posted_lower:
+                        # Extract number of days
+                        match = re.search(r'(\d+)\s*day', posted_lower)
+                        if match:
+                            days = int(match.group(1))
+                            posted_date = now - timedelta(days=days)
+                    elif 'week' in posted_lower:
+                        # Extract number of weeks
+                        match = re.search(r'(\d+)\s*week', posted_lower)
+                        if match:
+                            weeks = int(match.group(1))
+                            posted_date = now - timedelta(weeks=weeks)
+                    elif 'month' in posted_lower:
+                        # Extract number of months (approximate as 30 days)
+                        match = re.search(r'(\d+)\s*month', posted_lower)
+                        if match:
+                            months = int(match.group(1))
+                            posted_date = now - timedelta(days=months*30)
             except (ValueError, AttributeError):
                 posted_date = None
         
