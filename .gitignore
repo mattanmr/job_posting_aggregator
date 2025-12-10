@@ -47,3 +47,7 @@ dist/
 
 # instructions
 instructions/
+
+# Runtime data files (auto-generated, environment-specific)
+backend/app/data/
+frontend/public/data/
