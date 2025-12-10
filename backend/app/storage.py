@@ -2,7 +2,7 @@
 import os
 import json
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 from pathlib import Path
 from app.connectors.base import JobPosting
@@ -13,6 +13,10 @@ DATA_DIR = Path(__file__).parent / "data"
 CSV_DIR = DATA_DIR / "csv_files"
 KEYWORDS_FILE = DATA_DIR / "keywords.json"
 
+# CSV retention policy: keep last N files or files newer than X days
+CSV_MAX_FILES = 30  # Keep maximum 30 CSV files
+CSV_RETENTION_DAYS = 90  # Delete files older than 90 days
+
 
 def initialize_storage():
     """Initialize storage directories and files."""
@@ -21,6 +25,9 @@ def initialize_storage():
     
     if not KEYWORDS_FILE.exists():
         save_keywords([])
+    
+    # Apply retention policy on startup
+    cleanup_old_csv_files()
 
 
 def load_keywords() -> List[str]:
@@ -164,3 +171,42 @@ def get_csv_file_path(filename: str) -> Optional[Path]:
     if filepath.exists() and filepath.is_file():
         return filepath
     return None
+
+
+def cleanup_old_csv_files():
+    """
+    Clean up old CSV files based on retention policy.
+    Keeps maximum CSV_MAX_FILES files and deletes files older than CSV_RETENTION_DAYS.
+    """
+    if not CSV_DIR.exists():
+        return
+    
+    files = []
+    for filepath in CSV_DIR.glob("jobs_collection_*.csv"):
+        stat = filepath.stat()
+        files.append((filepath, stat.st_mtime))
+    
+    if not files:
+        return
+    
+    # Sort by modification time (newest first)
+    files.sort(key=lambda x: x[1], reverse=True)
+    
+    # Delete files exceeding max file count
+    if len(files) > CSV_MAX_FILES:
+        for filepath, _ in files[CSV_MAX_FILES:]:
+            try:
+                filepath.unlink()
+                print(f"Deleted old CSV file: {filepath.name}")
+            except Exception as e:
+                print(f"Error deleting CSV file {filepath.name}: {e}")
+    
+    # Delete files older than retention period
+    cutoff_time = (datetime.now() - timedelta(days=CSV_RETENTION_DAYS)).timestamp()
+    for filepath, mtime in files:
+        if mtime < cutoff_time:
+            try:
+                filepath.unlink()
+                print(f"Deleted expired CSV file: {filepath.name}")
+            except Exception as e:
+                print(f"Error deleting CSV file {filepath.name}: {e}")
