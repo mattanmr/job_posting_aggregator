@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Request, HTTPException
+﻿from fastapi import APIRouter, Query, Request, HTTPException
 from fastapi.responses import FileResponse
 from .connectors.mock_connector import MockConnector
 from .connectors.serpapi_connector import SerpAPIJobsConnector
@@ -248,11 +248,10 @@ async def collect_now():
             status_code=500,
             detail=f"Collection failed: {str(e)}"
         )
- 
- 
- @ r o u t e r . g e t ( " / a p i / c o l l e c t i o n - h i s t o r y " ) 
- a s y n c   d e f   g e t _ c o l l e c t i o n _ h i s t o r y _ e n d p o i n t ( l i m i t :   i n t   =   Q u e r y ( 2 0 ,   g e = 1 ,   l e = 1 0 0 ) ) : 
-         " " " G e t   c o l l e c t i o n   h i s t o r y   a n d   s t a t i s t i c s . " " " 
-         h i s t o r y   =   g e t _ c o l l e c t i o n _ h i s t o r y ( l i m i t = l i m i t ) 
-         r e t u r n   { " h i s t o r y " :   h i s t o r y }  
- 
+
+
+@router.get("/api/collection-history")
+async def get_collection_history_endpoint(limit: int = Query(20, ge=1, le=100)):
+    """Get collection history and statistics."""
+    history = get_collection_history(limit=limit)
+    return {"history": history}
