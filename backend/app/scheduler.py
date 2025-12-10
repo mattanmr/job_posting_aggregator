@@ -86,6 +86,7 @@ def get_next_collection_time():
 def collect_jobs_task():
     """
     Background task to collect jobs for all keywords.
+    Saves all collected jobs to a single CSV file per collection cycle.
     Runs every 12 hours.
     """
     print(f"[{datetime.now().isoformat()}] Starting scheduled job collection...")
@@ -103,7 +104,7 @@ def collect_jobs_task():
         serpapi = None
         print("SerpAPI not configured, using mock data only")
     
-    collected_count = 0
+    all_jobs = []
     
     for keyword in keywords:
         print(f"  Collecting jobs for keyword: '{keyword}'")
@@ -123,17 +124,18 @@ def collect_jobs_task():
             jobs = mock.search(keyword)
             print(f"    Using mock data: {len(jobs)} jobs")
         
-        # Save to CSV
-        if jobs:
-            filename = save_jobs_to_csv(jobs, keyword)
-            print(f"    Saved {len(jobs)} jobs to {filename}")
-            collected_count += len(jobs)
-        else:
-            print(f"    No jobs found for '{keyword}'")
+        all_jobs.extend(jobs)
+    
+    # Save all jobs to a single CSV file
+    if all_jobs:
+        filename = save_jobs_to_csv(all_jobs)
+        print(f"[{datetime.now().isoformat()}] Job collection completed. Total jobs: {len(all_jobs)}")
+        print(f"    Saved to {filename}")
+    else:
+        print(f"[{datetime.now().isoformat()}] No jobs found for any keyword")
     
     # Update last collection time
     save_collection_time(datetime.now().isoformat())
-    print(f"[{datetime.now().isoformat()}] Job collection completed. Total jobs: {collected_count}")
 
 
 def init_scheduler():
@@ -190,7 +192,8 @@ def shutdown_scheduler():
 
 def trigger_collection_now() -> dict:
     """
-    Trigger job collection immediately.
+    Trigger job collection immediately for all keywords.
+    Saves all collected jobs to a single CSV file.
     Returns collection statistics.
     """
     print(f"[{datetime.now().isoformat()}] Manual collection triggered...")
@@ -210,8 +213,8 @@ def trigger_collection_now() -> dict:
     except ValueError:
         serpapi = None
     
-    collected_count = 0
-    collected_keywords = []
+    all_jobs = []
+    keywords_collected = []
     
     for keyword in keywords:
         jobs = []
@@ -227,23 +230,26 @@ def trigger_collection_now() -> dict:
         if not jobs:
             jobs = mock.search(keyword)
         
-        # Save to CSV
         if jobs:
-            filename = save_jobs_to_csv(jobs, keyword)
-            collected_count += len(jobs)
-            collected_keywords.append({
+            all_jobs.extend(jobs)
+            keywords_collected.append({
                 "keyword": keyword,
-                "job_count": len(jobs),
-                "filename": filename
+                "job_count": len(jobs)
             })
+    
+    # Save all jobs to a single CSV file
+    filename = None
+    if all_jobs:
+        filename = save_jobs_to_csv(all_jobs)
     
     # Update last collection time
     save_collection_time(datetime.now().isoformat())
     
     return {
         "status": "success",
-        "message": f"Collected {collected_count} jobs for {len(collected_keywords)} keyword(s)",
-        "total_jobs": collected_count,
-        "keywords": collected_keywords,
+        "message": f"Collected {len(all_jobs)} jobs for {len(keywords_collected)} keyword(s)",
+        "total_jobs": len(all_jobs),
+        "keywords": keywords_collected,
+        "filename": filename,
         "timestamp": datetime.now().isoformat()
     }

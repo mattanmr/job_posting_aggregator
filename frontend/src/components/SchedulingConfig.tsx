@@ -117,7 +117,7 @@ export default function SchedulingConfig() {
       const result = await triggerCollectionNow();
 
       setCollectResult(
-        `✓ Successfully collected ${result.total_jobs} jobs for ${result.keywords.length} keyword(s)`
+        `✓ Successfully collected ${result.total_jobs} jobs from ${result.keywords.length} keyword(s)`
       );
       setTimeout(() => setCollectResult(null), 5000);
     } catch (err: any) {

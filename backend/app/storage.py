@@ -66,16 +66,18 @@ def remove_keyword(keyword: str) -> bool:
     return False
 
 
-def save_jobs_to_csv(jobs: List[JobPosting], keyword: str) -> str:
+def save_jobs_to_csv(jobs: List[JobPosting]) -> str:
     """
-    Save job postings to a CSV file.
+    Save job postings to a single CSV file for the collection cycle.
+    
+    Args:
+        jobs: List of JobPosting objects from all keywords
     
     Returns:
         Filename of the created CSV file
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_keyword = "".join(c if c.isalnum() else "_" for c in keyword)
-    filename = f"jobs_{safe_keyword}_{timestamp}.csv"
+    filename = f"jobs_collection_{timestamp}.csv"
     filepath = CSV_DIR / filename
     
     fieldnames = [
@@ -113,19 +115,18 @@ def list_csv_files() -> List[Dict[str, any]]:
     List all CSV files with metadata.
     
     Returns:
-        List of dicts with filename, keyword, timestamp, and file size
+        List of dicts with filename, timestamp, and file size
     """
     if not CSV_DIR.exists():
         return []
     
     files = []
-    for filepath in CSV_DIR.glob("jobs_*.csv"):
+    for filepath in CSV_DIR.glob("jobs_collection_*.csv"):
         stat = filepath.stat()
         
-        # Parse filename: jobs_{keyword}_{timestamp}.csv
-        name_parts = filepath.stem.split('_')
-        keyword = '_'.join(name_parts[1:-2]) if len(name_parts) > 2 else 'unknown'
-        timestamp_str = '_'.join(name_parts[-2:]) if len(name_parts) > 2 else ''
+        # Parse filename: jobs_collection_{timestamp}.csv
+        name_parts = filepath.stem.split('_')  # ['jobs', 'collection', YYYYMMDD, HHMMSS]
+        timestamp_str = '_'.join(name_parts[-2:]) if len(name_parts) >= 4 else ''
         
         try:
             timestamp = datetime.strptime(timestamp_str, "%Y%m%d_%H%M%S")
@@ -142,7 +143,6 @@ def list_csv_files() -> List[Dict[str, any]]:
         
         files.append({
             'filename': filepath.name,
-            'keyword': keyword,
             'timestamp': timestamp.isoformat(),
             'size': stat.st_size,
             'job_count': job_count

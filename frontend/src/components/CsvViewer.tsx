@@ -70,7 +70,6 @@ export default function CsvViewer() {
           <table style={styles.table}>
             <thead>
               <tr style={styles.headerRow}>
-                <th style={styles.headerCell}>Keyword</th>
                 <th style={styles.headerCell}>Collection Date</th>
                 <th style={styles.headerCell}>Job Count</th>
                 <th style={styles.headerCell}>File Size</th>
@@ -80,9 +79,6 @@ export default function CsvViewer() {
             <tbody>
               {files.map((file, index) => (
                 <tr key={index} style={styles.bodyRow}>
-                  <td style={styles.cell}>
-                    <span style={styles.keywordTag}>{file.keyword}</span>
-                  </td>
                   <td style={styles.cell}>
                     <div style={styles.timestamp}>
                       <div>{file.timestamp.split("T")[0]}</div>

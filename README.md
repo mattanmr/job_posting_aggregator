@@ -160,7 +160,7 @@ job_posting_aggregator/
 
 ### CSV File Management
 - `GET /api/csv-files` - List all collected CSV files
-  - Returns: Array of CsvFileInfo objects with filename, keyword, timestamp, size, job_count
+  - Returns: Array of CsvFileInfo objects with filename, timestamp, size, job_count
 
 - `GET /api/csv-files/{filename}` - Download a specific CSV file
   - Returns: CSV file download
@@ -177,17 +177,17 @@ job_posting_aggregator/
 
 ## Scheduled Job Collection
 
-Jobs are collected automatically every **12 hours** for all configured keywords.
+Jobs are collected automatically every **12 hours** (configurable) for all configured keywords into a **single CSV file per collection cycle**.
 
 ### How it Works
 1. Add keywords through the frontend "Job Search Keywords" section
 2. The backend scheduler automatically collects jobs for all keywords every 12 hours
-3. Collected jobs are stored in CSV files in `backend/app/data/csv_files/`
+3. All collected jobs are saved to a **single CSV file** in `backend/app/data/csv_files/`
 4. View the countdown timer on the "Job Collection Status" section
 5. Download collected CSV files from "Collected Job Data" section
 
 ### Collection Data
-Each CSV file contains:
+Each CSV file contains jobs from all keywords collected in one cycle. The file includes:
 - Job Title
 - Company Name
 - Location
