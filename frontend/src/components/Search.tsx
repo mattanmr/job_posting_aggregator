@@ -122,12 +122,30 @@ export default function Search() {
                 </>
               )}
             </div>
+
+            {/* Education and Experience Requirements */}
+            <div style={{ marginBottom: "8px", display: "flex", gap: "15px", flexWrap: "wrap" }}>
+              {r.diploma_required && (
+                <div style={{ fontSize: "13px" }}>
+                  <span style={{ fontWeight: "600", color: "#555" }}>Education:</span>{" "}
+                  <span style={{ color: "#666" }}>{r.diploma_required}</span>
+                </div>
+              )}
+              {r.years_experience && (
+                <div style={{ fontSize: "13px" }}>
+                  <span style={{ fontWeight: "600", color: "#555" }}>Experience:</span>{" "}
+                  <span style={{ color: "#666" }}>{r.years_experience}</span>
+                </div>
+              )}
+            </div>
+
             {r.description && (
               <div
                 style={{
                   color: "#666",
                   marginBottom: "10px",
                   lineHeight: "1.5",
+                  fontSize: "14px",
                 }}
               >
                 {r.description.length > 300
