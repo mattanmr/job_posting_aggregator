@@ -186,3 +186,64 @@ def shutdown_scheduler():
     """Shutdown the scheduler."""
     if scheduler.running:
         scheduler.shutdown()
+
+
+def trigger_collection_now() -> dict:
+    """
+    Trigger job collection immediately.
+    Returns collection statistics.
+    """
+    print(f"[{datetime.now().isoformat()}] Manual collection triggered...")
+    
+    keywords = load_keywords()
+    if not keywords:
+        return {
+            "status": "skipped",
+            "message": "No keywords configured",
+            "total_jobs": 0
+        }
+    
+    # Initialize connectors
+    mock = MockConnector()
+    try:
+        serpapi = SerpAPIJobsConnector()
+    except ValueError:
+        serpapi = None
+    
+    collected_count = 0
+    collected_keywords = []
+    
+    for keyword in keywords:
+        jobs = []
+        
+        # Try SerpAPI first if available
+        if serpapi:
+            try:
+                jobs = serpapi.search(query=keyword)
+            except Exception as e:
+                print(f"    Error with SerpAPI: {e}")
+        
+        # Fallback to mock data if needed
+        if not jobs:
+            jobs = mock.search(keyword)
+        
+        # Save to CSV
+        if jobs:
+            filename = save_jobs_to_csv(jobs, keyword)
+            collected_count += len(jobs)
+            collected_keywords.append({
+                "keyword": keyword,
+                "job_count": len(jobs),
+                "filename": filename
+            })
+    
+    # Update last collection time
+    save_collection_time(datetime.now().isoformat())
+    
+    return {
+        "status": "success",
+        "message": f"Collected {collected_count} jobs for {len(collected_keywords)} keyword(s)",
+        "total_jobs": collected_count,
+        "keywords": collected_keywords,
+        "timestamp": datetime.now().isoformat()
+    }

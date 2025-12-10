@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import {
   getScheduleConfig,
   updateScheduleConfig,
+  getKeywords,
+  triggerCollectionNow,
 } from "../services/api";
 import { ScheduleConfig } from "../types";
 
@@ -13,9 +15,13 @@ export default function SchedulingConfig() {
   const [inputValue, setInputValue] = useState("12");
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [collectingNow, setCollectingNow] = useState(false);
+  const [collectResult, setCollectResult] = useState<string | null>(null);
 
   useEffect(() => {
     loadConfig();
+    loadKeywords();
   }, []);
 
   const loadConfig = async () => {
@@ -30,6 +36,15 @@ export default function SchedulingConfig() {
       setError("Failed to load schedule configuration");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadKeywords = async () => {
+    try {
+      const kw = await getKeywords();
+      setKeywords(kw);
+    } catch (err: any) {
+      console.error("Failed to load keywords:", err);
     }
   };
 
@@ -75,6 +90,45 @@ export default function SchedulingConfig() {
       setInputValue(config.interval_hours.toString());
     }
     setError(null);
+  };
+
+  const handleCollectNow = () => {
+    if (keywords.length === 0) {
+      setError("No keywords configured. Add keywords first before collecting.");
+      return;
+    }
+
+    const keywordList = keywords.join(", ");
+    const confirmed = window.confirm(
+      `Collect jobs now for the following keywords?\n\n${keywordList}\n\nThis will use API quota.`
+    );
+
+    if (confirmed) {
+      performCollectionNow();
+    }
+  };
+
+  const performCollectionNow = async () => {
+    try {
+      setCollectingNow(true);
+      setError(null);
+      setCollectResult(null);
+
+      const result = await triggerCollectionNow();
+
+      setCollectResult(
+        `✓ Successfully collected ${result.total_jobs} jobs for ${result.keywords.length} keyword(s)`
+      );
+      setTimeout(() => setCollectResult(null), 5000);
+    } catch (err: any) {
+      console.error("Collection failed:", err);
+      setError(
+        err.response?.data?.detail ||
+          "Failed to trigger collection. Please try again."
+      );
+    } finally {
+      setCollectingNow(false);
+    }
   };
 
   if (loading) {
@@ -179,6 +233,36 @@ export default function SchedulingConfig() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Collect Now section */}
+          <div style={styles.collectNowBox}>
+            <strong style={styles.collectNowTitle}>Manual Collection</strong>
+            <p style={styles.collectNowDesc}>
+              Trigger job collection immediately for all keywords without waiting for the scheduled interval.
+            </p>
+            {collectResult && (
+              <div style={styles.collectResultMessage}>{collectResult}</div>
+            )}
+            <button
+              onClick={handleCollectNow}
+              disabled={collectingNow || keywords.length === 0}
+              style={{
+                ...styles.collectNowBtn,
+                opacity: collectingNow || keywords.length === 0 ? 0.6 : 1,
+                cursor:
+                  collectingNow || keywords.length === 0
+                    ? "not-allowed"
+                    : "pointer",
+              }}
+            >
+              {collectingNow ? "Collecting..." : "Collect Now"}
+            </button>
+            {keywords.length === 0 && (
+              <p style={styles.noKeywordsMsg}>
+                No keywords configured. Add keywords to enable collection.
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -319,6 +403,7 @@ const styles = {
     border: "1px solid #e0e0e0",
     borderRadius: "4px",
     padding: "10px",
+    marginBottom: "12px",
   },
   examplesTitle: {
     fontSize: "13px",
@@ -339,5 +424,49 @@ const styles = {
     fontSize: "12px",
     fontWeight: "500",
     transition: "all 0.2s",
+  },
+  collectNowBox: {
+    backgroundColor: "#f0f7ff",
+    border: "1px solid #90caf9",
+    borderRadius: "4px",
+    padding: "12px",
+    marginTop: "12px",
+  },
+  collectNowTitle: {
+    fontSize: "13px",
+    color: "#1565c0",
+    display: "block",
+    marginBottom: "6px",
+  },
+  collectNowDesc: {
+    margin: "0 0 10px 0",
+    fontSize: "12px",
+    color: "#555",
+    lineHeight: "1.4",
+  },
+  collectNowBtn: {
+    padding: "8px 16px",
+    backgroundColor: "#2196F3",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "13px",
+    fontWeight: "600",
+    transition: "background-color 0.2s",
+  },
+  collectResultMessage: {
+    padding: "8px",
+    backgroundColor: "#c8e6c9",
+    color: "#1b5e20",
+    borderRadius: "3px",
+    marginBottom: "10px",
+    fontSize: "12px",
+  },
+  noKeywordsMsg: {
+    margin: "8px 0 0 0",
+    fontSize: "12px",
+    color: "#d32f2f",
+    fontStyle: "italic",
   },
 };

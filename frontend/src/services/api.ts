@@ -116,4 +116,23 @@ export const updateScheduleConfig = async (
   return response.data;
 };
 
+/**
+ * Trigger immediate job collection
+ */
+export const triggerCollectionNow = async (): Promise<{
+  status: string;
+  message: string;
+  total_jobs: number;
+  keywords: Array<{
+    keyword: string;
+    job_count: number;
+    filename: string;
+  }>;
+  timestamp: string;
+}> => {
+  const response = await apiClient.post("/api/collect-now");
+  return response.data;
+};
+
 export default apiClient;
+

@@ -4,7 +4,7 @@ from .connectors.mock_connector import MockConnector
 from .connectors.serpapi_connector import SerpAPIJobsConnector
 from .schemas import JobOut, KeywordRequest, KeywordResponse, CsvFileInfo, CollectionStatus, ScheduleConfigRequest, ScheduleConfigResponse
 from .storage import load_keywords, add_keyword, remove_keyword, list_csv_files, get_csv_file_path
-from .scheduler import get_next_collection_time, get_last_collection_time, load_schedule_config, update_scheduler_interval
+from .scheduler import get_next_collection_time, get_last_collection_time, load_schedule_config, update_scheduler_interval, trigger_collection_now
 from typing import List, Optional
 from datetime import datetime
 import os
@@ -215,3 +215,16 @@ async def update_schedule_config(request: ScheduleConfigRequest):
         return ScheduleConfigResponse(interval_hours=interval_hours)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/api/collect-now")
+async def collect_now():
+    """Trigger immediate job collection for all keywords."""
+    try:
+        result = trigger_collection_now()
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Collection failed: {str(e)}"
+        )
