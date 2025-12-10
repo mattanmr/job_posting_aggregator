@@ -10,13 +10,15 @@ A comprehensive job posting aggregator with automated job collection, keyword ma
 - **Keyword management** - Add/remove search keywords for automated collection
 - **CSV storage** - Save collected jobs to CSV files with structured data
 - **Collection status** - View countdown timer to next collection and last collection time
-- **CSV viewer** - Browse and download collected job data
+- **CSV viewer** - Browse, preview, and download collected job data
+- **Per-keyword analytics** - View job counts per keyword in each collection cycle
 - **Multi-source integration** - Support for SerpAPI Google Jobs and mock data (fallback)
 - **Extensible connector architecture** - Easy to add more job sources
 - **Modern React UI** - TypeScript frontend with responsive design
 
 ### Data Collected
 Each job posting includes:
+- **Source keyword** - Which keyword triggered the collection
 - Job title
 - Company name
 - Location
@@ -119,9 +121,12 @@ job_posting_aggregator/
 │   │   │   ├── Search.tsx        # Manual job search
 │   │   │   ├── KeywordManager.tsx # Add/remove keywords
 │   │   │   ├── CollectionStatus.tsx # Collection countdown timer
-│   │   │   └── CsvViewer.tsx     # View and download CSV files
+│   │   │   ├── CsvViewer.tsx     # View and download CSV files
+│   │   │   └── CsvPreview.tsx    # CSV preview modal component
 │   │   ├── services/
 │   │   │   └── api.ts            # API client with typed functions
+│   │   ├── styles/
+│   │   │   └── CsvPreview.css    # CSV preview modal styles
 │   │   ├── types/
 │   │   │   └── index.ts          # TypeScript interfaces
 │   │   ├── App.tsx               # Root component
@@ -160,10 +165,15 @@ job_posting_aggregator/
 
 ### CSV File Management
 - `GET /api/csv-files` - List all collected CSV files
-  - Returns: Array of CsvFileInfo objects with filename, timestamp, size, job_count
+  - Returns: Array of CsvFileInfo objects with filename, timestamp, size, job_count, keyword_counts
+  - `keyword_counts`: Dictionary mapping keywords to their job counts in the file
 
 - `GET /api/csv-files/{filename}` - Download a specific CSV file
   - Returns: CSV file download
+
+- `GET /api/csv-files/{filename}/preview` - Preview CSV file content
+  - Query parameters: `limit` (optional, default 100, max 1000)
+  - Returns: JSON with headers, rows, total_rows, and has_more flag
 
 ### Collection Status
 - `GET /api/next-collection` - Get next collection time and status
@@ -188,6 +198,7 @@ Jobs are collected automatically every **12 hours** (configurable) for all confi
 
 ### Collection Data
 Each CSV file contains jobs from all keywords collected in one cycle. The file includes:
+- **Keyword** - Which keyword this job was collected for
 - Job Title
 - Company Name
 - Location
@@ -196,6 +207,11 @@ Each CSV file contains jobs from all keywords collected in one cycle. The file i
 - Job URL
 - Posted Date
 - Description (first 500 characters)
+
+**UI Features:**
+- Click "Preview" button to view CSV content in a modal without downloading
+- See per-keyword job counts in the "Keywords" column of the CSV files table
+- Each keyword shows the number of jobs found for that keyword in that collection cycle
 
 ## Architecture
 
