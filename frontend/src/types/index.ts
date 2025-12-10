@@ -24,6 +24,7 @@ export interface CsvFileInfo {
   timestamp: string;
   size: number;
   job_count: number;
+  keyword_counts?: Record<string, number>;
 }
 
 export interface CollectionStatus {

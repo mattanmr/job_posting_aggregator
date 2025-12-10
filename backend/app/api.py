@@ -10,6 +10,7 @@ from typing import List, Optional
 from datetime import datetime
 import os
 import re
+import csv
 from pathlib import Path
 
 router = APIRouter()
@@ -255,3 +256,58 @@ async def get_collection_history_endpoint(limit: int = Query(20, ge=1, le=100)):
     """Get collection history and statistics."""
     history = get_collection_history(limit=limit)
     return {"history": history}
+
+
+@router.get("/api/csv-files/{filename}/preview")
+async def preview_csv_file(filename: str, limit: int = Query(100, ge=1, le=1000)):
+    """
+    Preview CSV file content without downloading.
+    
+    Args:
+        filename: CSV filename
+        limit: Maximum number of rows to return (default 100, max 1000)
+    
+    Returns:
+        JSON with headers, rows, and metadata
+    """
+    # Validate filename to prevent directory traversal
+    if not filename or not re.match(r'^jobs_collection_\d{8}_\d{6}\.csv$', filename):
+        raise HTTPException(status_code=400, detail="Invalid filename format")
+    
+    filepath = get_csv_file_path(filename)
+    if not filepath:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Security: verify resolved path is within data directory
+    try:
+        resolved_path = filepath.resolve()
+        csv_dir = (Path(__file__).parent / "data" / "csv_files").resolve()
+        if not str(resolved_path).startswith(str(csv_dir)):
+            raise HTTPException(status_code=403, detail="Access denied")
+    except Exception:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Read and return CSV content
+    try:
+        rows = []
+        headers = []
+        
+        with open(filepath, 'r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            headers = reader.fieldnames or []
+            
+            # Read up to limit rows
+            for i, row in enumerate(reader):
+                if i >= limit:
+                    break
+                rows.append(row)
+        
+        return {
+            "filename": filename,
+            "headers": headers,
+            "rows": rows,
+            "total_rows": len(rows),
+            "has_more": len(rows) == limit
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading CSV: {str(e)}")

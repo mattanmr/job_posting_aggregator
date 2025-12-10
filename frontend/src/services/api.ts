@@ -134,5 +134,27 @@ export const triggerCollectionNow = async (): Promise<{
   return response.data;
 };
 
+/**
+ * Get CSV file preview (without downloading)
+ */
+export const getCsvPreview = async (
+  filename: string,
+  limit?: number
+): Promise<{
+  filename: string;
+  headers: string[];
+  rows: Record<string, string>[];
+  total_rows: number;
+  has_more: boolean;
+}> => {
+  const response = await apiClient.get(
+    `/api/csv-files/${encodeURIComponent(filename)}/preview`,
+    {
+      params: { limit: limit || 100 },
+    }
+  );
+  return response.data;
+};
+
 export default apiClient;
 

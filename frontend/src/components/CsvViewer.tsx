@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { getCsvFiles, downloadCsvFile } from "../services/api";
 import { CsvFileInfo } from "../types";
+import CsvPreview from "./CsvPreview";
 
 export default function CsvViewer() {
   const [files, setFiles] = useState<CsvFileInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [previewFile, setPreviewFile] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     loadCsvFiles();
@@ -72,6 +75,7 @@ export default function CsvViewer() {
               <tr style={styles.headerRow}>
                 <th style={styles.headerCell}>Collection Date</th>
                 <th style={styles.headerCell}>Job Count</th>
+                <th style={styles.headerCell}>Keywords</th>
                 <th style={styles.headerCell}>File Size</th>
                 <th style={styles.headerCell}>Action</th>
               </tr>
@@ -90,18 +94,45 @@ export default function CsvViewer() {
                   <td style={styles.cell}>
                     <span style={styles.jobCount}>{file.job_count}</span>
                   </td>
+                  <td style={styles.cell}>
+                    <div style={styles.keywordsContainer}>
+                      {Object.entries(file.keyword_counts || {}).map(
+                        ([keyword, count]) => (
+                          <span
+                            key={keyword}
+                            style={styles.keywordTag}
+                            title={`${keyword}: ${count} jobs`}
+                          >
+                            {keyword}: {count}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  </td>
                   <td style={styles.cell}>{formatFileSize(file.size)}</td>
                   <td style={styles.cell}>
-                    <button
-                      onClick={() => handleDownload(file.filename)}
-                      disabled={downloading === file.filename}
-                      style={styles.downloadBtn}
-                      title="Download CSV file"
-                    >
-                      {downloading === file.filename
-                        ? "Downloading..."
-                        : "Download"}
-                    </button>
+                    <div style={styles.actionButtons}>
+                      <button
+                        onClick={() => {
+                          setPreviewFile(file.filename);
+                          setPreviewOpen(true);
+                        }}
+                        style={styles.previewBtn}
+                        title="Preview CSV content"
+                      >
+                        Preview
+                      </button>
+                      <button
+                        onClick={() => handleDownload(file.filename)}
+                        disabled={downloading === file.filename}
+                        style={styles.downloadBtn}
+                        title="Download CSV file"
+                      >
+                        {downloading === file.filename
+                          ? "Downloading..."
+                          : "Download"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -114,6 +145,7 @@ export default function CsvViewer() {
       <div style={styles.infoBox}>
         <strong>CSV File Contents:</strong>
         <div style={styles.fieldsList}>
+          • Keyword<br />
           • Job Title<br />
           • Company Name<br />
           • Location<br />
@@ -124,6 +156,15 @@ export default function CsvViewer() {
           • Description (first 500 characters)<br />
         </div>
       </div>
+
+      {/* CSV Preview Modal */}
+      {previewFile && (
+        <CsvPreview
+          filename={previewFile}
+          isOpen={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -238,6 +279,27 @@ const styles = {
     cursor: "pointer",
     fontSize: "12px",
     fontWeight: "500",
+  },
+  previewBtn: {
+    padding: "6px 12px",
+    backgroundColor: "#9c27b0",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "500",
+    marginRight: "8px",
+  },
+  actionButtons: {
+    display: "flex" as const,
+    gap: "8px",
+    flexWrap: "wrap" as const,
+  },
+  keywordsContainer: {
+    display: "flex" as const,
+    flexWrap: "wrap" as const,
+    gap: "6px",
   },
   infoBox: {
     backgroundColor: "white",
