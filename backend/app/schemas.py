@@ -26,7 +26,6 @@ class KeywordResponse(BaseModel):
 
 class CsvFileInfo(BaseModel):
     filename: str
-    keyword: str
     timestamp: str
     size: int
     job_count: int

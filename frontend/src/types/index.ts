@@ -21,7 +21,6 @@ export interface KeywordResponse {
 
 export interface CsvFileInfo {
   filename: string;
-  keyword: string;
   timestamp: string;
   size: number;
   job_count: number;
