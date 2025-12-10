@@ -97,7 +97,16 @@ const CsvPreview: React.FC<CsvPreviewProps> = ({
                                 : ""
                             }
                           >
-                            {header === "description"
+                            {header === "url" ? (
+                              <a 
+                                href={row[header]} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                style={{color: "#0284c7", textDecoration: "underline"}}
+                              >
+                                {row[header]?.substring(0, 50)}...
+                              </a>
+                            ) : header === "description"
                               ? (row[header] || "").substring(0, 100) + "..."
                               : row[header] || "—"}
                           </td>

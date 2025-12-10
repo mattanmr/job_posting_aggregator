@@ -92,19 +92,28 @@ export default function SchedulingConfig() {
     setError(null);
   };
 
-  const handleCollectNow = () => {
-    if (keywords.length === 0) {
-      setError("No keywords configured. Add keywords first before collecting.");
-      return;
-    }
+  const handleCollectNow = async () => {
+    // Reload keywords to get the latest list
+    try {
+      const latestKeywords = await getKeywords();
+      setKeywords(latestKeywords);
+      
+      if (latestKeywords.length === 0) {
+        setError("No keywords configured. Add keywords first before collecting.");
+        return;
+      }
 
-    const keywordList = keywords.join(", ");
-    const confirmed = window.confirm(
-      `Collect jobs now for the following keywords?\n\n${keywordList}\n\nThis will use API quota.`
-    );
+      const keywordList = latestKeywords.join(", ");
+      const confirmed = window.confirm(
+        `Collect jobs now for the following keywords?\n\n${keywordList}\n\nThis will use API quota.`
+      );
 
-    if (confirmed) {
-      performCollectionNow();
+      if (confirmed) {
+        performCollectionNow();
+      }
+    } catch (err: any) {
+      setError("Failed to load keywords. Please try again.");
+      console.error(err);
     }
   };
 
