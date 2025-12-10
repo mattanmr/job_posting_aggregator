@@ -28,7 +28,6 @@ export default function App() {
           Search job postings and set up automated collection with keyword management
         </p>
       </header>
-
       {/* Row 1: Keywords + Collection Status */}
       <div
         style={{
@@ -64,11 +63,6 @@ export default function App() {
           <CsvViewer />
         </section>
       </div>
-
-      {/* Row 3: Manual Search full width */}
-      <section>
-        <Search />
-      </section>
     </div>
   );
 }
