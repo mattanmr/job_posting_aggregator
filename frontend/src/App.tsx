@@ -1,6 +1,7 @@
 import Search from "./components/Search";
 import KeywordManager from "./components/KeywordManager";
 import CollectionStatus from "./components/CollectionStatus";
+import SchedulingConfig from "./components/SchedulingConfig";
 import CsvViewer from "./components/CsvViewer";
 
 export default function App() {
@@ -21,6 +22,11 @@ export default function App() {
       {/* Collection Status Section */}
       <section style={{ marginBottom: "20px" }}>
         <CollectionStatus />
+      </section>
+
+      {/* Scheduling Configuration Section */}
+      <section style={{ marginBottom: "20px" }}>
+        <SchedulingConfig />
       </section>
 
       {/* CSV Viewer Section */}

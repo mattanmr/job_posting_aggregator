@@ -2,9 +2,9 @@ from fastapi import APIRouter, Query, Request, HTTPException
 from fastapi.responses import FileResponse
 from .connectors.mock_connector import MockConnector
 from .connectors.serpapi_connector import SerpAPIJobsConnector
-from .schemas import JobOut, KeywordRequest, KeywordResponse, CsvFileInfo, CollectionStatus
+from .schemas import JobOut, KeywordRequest, KeywordResponse, CsvFileInfo, CollectionStatus, ScheduleConfigRequest, ScheduleConfigResponse
 from .storage import load_keywords, add_keyword, remove_keyword, list_csv_files, get_csv_file_path
-from .scheduler import get_next_collection_time, get_last_collection_time
+from .scheduler import get_next_collection_time, get_last_collection_time, load_schedule_config, update_scheduler_interval
 from typing import List, Optional
 from datetime import datetime
 import os
@@ -187,3 +187,31 @@ async def get_collection_status():
         last_collection_timestamp=last_time,
         last_collection_time=last_time_readable
     )
+
+
+# Schedule configuration endpoints
+
+@router.get("/api/schedule-config", response_model=ScheduleConfigResponse)
+async def get_schedule_config():
+    """Get current schedule configuration."""
+    interval_hours = load_schedule_config()
+    return ScheduleConfigResponse(interval_hours=interval_hours)
+
+
+@router.put("/api/schedule-config", response_model=ScheduleConfigResponse)
+async def update_schedule_config(request: ScheduleConfigRequest):
+    """Update schedule configuration."""
+    interval_hours = request.interval_hours
+    
+    # Validate interval (1 hour to 1 week)
+    if interval_hours < 1 or interval_hours > 168:
+        raise HTTPException(
+            status_code=400,
+            detail="Interval must be between 1 and 168 hours (1 hour to 1 week)"
+        )
+    
+    try:
+        update_scheduler_interval(interval_hours)
+        return ScheduleConfigResponse(interval_hours=interval_hours)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

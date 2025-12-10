@@ -12,8 +12,32 @@ from pathlib import Path
 # Global scheduler instance
 scheduler = BackgroundScheduler()
 
-# Store last collection time
+# Store last collection time and schedule config
 METADATA_FILE = Path(__file__).parent / "data" / "collection_metadata.json"
+CONFIG_FILE = Path(__file__).parent / "data" / "scheduler_config.json"
+
+# Default schedule: 12 hours
+DEFAULT_INTERVAL_HOURS = 12
+
+
+def load_schedule_config():
+    """Load scheduling configuration from file."""
+    if CONFIG_FILE.exists():
+        try:
+            with open(CONFIG_FILE, 'r') as f:
+                data = json.load(f)
+                return data.get('interval_hours', DEFAULT_INTERVAL_HOURS)
+        except:
+            pass
+    return DEFAULT_INTERVAL_HOURS
+
+
+def save_schedule_config(interval_hours: int):
+    """Save scheduling configuration to file."""
+    CONFIG_FILE.parent.mkdir(exist_ok=True)
+    data = {'interval_hours': interval_hours}
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump(data, f)
 
 
 def get_last_collection_time():
@@ -119,10 +143,13 @@ def init_scheduler():
     # Remove any existing jobs to avoid duplicates
     scheduler.remove_all_jobs()
     
-    # Schedule job collection every 12 hours
+    # Load configured interval
+    interval_hours = load_schedule_config()
+    
+    # Schedule job collection every N hours (configurable)
     scheduler.add_job(
         func=collect_jobs_task,
-        trigger=IntervalTrigger(hours=12),
+        trigger=IntervalTrigger(hours=interval_hours),
         id='collect_jobs',
         name='collect_jobs',
         replace_existing=True
@@ -131,6 +158,28 @@ def init_scheduler():
     # Start scheduler if not already running
     if not scheduler.running:
         scheduler.start()
+        print(f"[{datetime.now().isoformat()}] Scheduler started with interval: {interval_hours} hours")
+
+
+def update_scheduler_interval(interval_hours: int):
+    """Update the scheduler interval and reschedule the job."""
+    if interval_hours < 1 or interval_hours > 168:  # 1 hour to 1 week
+        raise ValueError("Interval must be between 1 and 168 hours")
+    
+    # Save new configuration
+    save_schedule_config(interval_hours)
+    
+    # Reschedule the job with new interval
+    if scheduler.running:
+        scheduler.remove_job('collect_jobs')
+        scheduler.add_job(
+            func=collect_jobs_task,
+            trigger=IntervalTrigger(hours=interval_hours),
+            id='collect_jobs',
+            name='collect_jobs',
+            replace_existing=True
+        )
+        print(f"[{datetime.now().isoformat()}] Scheduler interval updated to {interval_hours} hours")
 
 
 def shutdown_scheduler():

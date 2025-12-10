@@ -33,3 +33,9 @@ export interface CollectionStatus {
   last_collection_timestamp?: string;
   last_collection_time?: string;
 }
+
+export interface ScheduleConfig {
+  interval_hours: number;
+  min_interval: number;
+  max_interval: number;
+}

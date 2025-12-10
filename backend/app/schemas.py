@@ -38,3 +38,12 @@ class CollectionStatus(BaseModel):
     last_collection_timestamp: Optional[str] = None
     last_collection_time: Optional[str] = None
 
+
+class ScheduleConfigRequest(BaseModel):
+    interval_hours: int
+
+
+class ScheduleConfigResponse(BaseModel):
+    interval_hours: int
+    min_interval: int = 1
+    max_interval: int = 168

@@ -4,6 +4,7 @@ import {
   KeywordResponse,
   CsvFileInfo,
   CollectionStatus,
+  ScheduleConfig,
 } from "../types";
 
 const base = process.env.REACT_APP_API_URL || "http://localhost:8000";
@@ -90,6 +91,27 @@ export const downloadCsvFile = async (filename: string): Promise<void> => {
 export const getCollectionStatus = async (): Promise<CollectionStatus> => {
   const response = await apiClient.get<CollectionStatus>(
     "/api/next-collection"
+  );
+  return response.data;
+};
+
+/**
+ * Get scheduling configuration
+ */
+export const getScheduleConfig = async (): Promise<ScheduleConfig> => {
+  const response = await apiClient.get<ScheduleConfig>("/api/schedule-config");
+  return response.data;
+};
+
+/**
+ * Update scheduling configuration
+ */
+export const updateScheduleConfig = async (
+  intervalHours: number
+): Promise<ScheduleConfig> => {
+  const response = await apiClient.put<ScheduleConfig>(
+    "/api/schedule-config",
+    { interval_hours: intervalHours }
   );
   return response.data;
 };
