@@ -1,13 +1,16 @@
-from fastapi import APIRouter, Query, Request, HTTPException
+﻿from fastapi import APIRouter, Query, Request, HTTPException
 from fastapi.responses import FileResponse
 from .connectors.mock_connector import MockConnector
 from .connectors.serpapi_connector import SerpAPIJobsConnector
 from .schemas import JobOut, KeywordRequest, KeywordResponse, CsvFileInfo, CollectionStatus, ScheduleConfigRequest, ScheduleConfigResponse
 from .storage import load_keywords, add_keyword, remove_keyword, list_csv_files, get_csv_file_path
 from .scheduler import get_next_collection_time, get_last_collection_time, load_schedule_config, update_scheduler_interval, trigger_collection_now
+from .collection_history import get_collection_history
 from typing import List, Optional
 from datetime import datetime
 import os
+import re
+from pathlib import Path
 
 router = APIRouter()
 
@@ -109,7 +112,15 @@ async def add_keyword_endpoint(request: KeywordRequest):
     if not request.keyword or not request.keyword.strip():
         raise HTTPException(status_code=400, detail="Keyword cannot be empty")
     
-    success = add_keyword(request.keyword)
+    # Validate keyword: alphanumeric, spaces, hyphens, underscores only
+    keyword = request.keyword.strip()
+    if not re.match(r'^[a-zA-Z0-9\s\-_]+$', keyword):
+        raise HTTPException(status_code=400, detail="Keyword can only contain letters, numbers, spaces, hyphens, and underscores")
+    
+    if len(keyword) > 100:
+        raise HTTPException(status_code=400, detail="Keyword must be 100 characters or less")
+    
+    success = add_keyword(keyword)
     keywords = load_keywords()
     
     if not success:
@@ -142,13 +153,22 @@ async def get_csv_files():
 @router.get("/api/csv-files/{filename}")
 async def download_csv_file(filename: str):
     """Download a specific CSV file."""
-    # Validate filename to prevent directory traversal
-    if ".." in filename or "/" in filename or "\\" in filename:
-        raise HTTPException(status_code=400, detail="Invalid filename")
+    # Validate filename to prevent directory traversal and path injection
+    if not filename or not re.match(r'^jobs_collection_\d{8}_\d{6}\.csv$', filename):
+        raise HTTPException(status_code=400, detail="Invalid filename format")
     
     filepath = get_csv_file_path(filename)
     if not filepath:
         raise HTTPException(status_code=404, detail="File not found")
+    
+    # Additional security: verify resolved path is within data directory
+    try:
+        resolved_path = filepath.resolve()
+        csv_dir = (Path(__file__).parent / "data" / "csv_files").resolve()
+        if not str(resolved_path).startswith(str(csv_dir)):
+            raise HTTPException(status_code=403, detail="Access denied")
+    except Exception:
+        raise HTTPException(status_code=403, detail="Access denied")
     
     return FileResponse(
         path=filepath,
@@ -228,3 +248,10 @@ async def collect_now():
             status_code=500,
             detail=f"Collection failed: {str(e)}"
         )
+
+
+@router.get("/api/collection-history")
+async def get_collection_history_endpoint(limit: int = Query(20, ge=1, le=100)):
+    """Get collection history and statistics."""
+    history = get_collection_history(limit=limit)
+    return {"history": history}

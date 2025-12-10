@@ -63,6 +63,11 @@ export default function App() {
           <CsvViewer />
         </section>
       </div>
+
+      {/* Row 3: Manual Search full width */}
+      <section>
+        <Search />
+      </section>
     </div>
   );
 }

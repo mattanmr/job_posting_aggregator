@@ -2,7 +2,8 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from datetime import datetime, timedelta
-from .storage import load_keywords, save_jobs_to_csv, initialize_storage
+from .storage import load_keywords, save_jobs_to_csv, initialize_storage, cleanup_old_csv_files
+from .collection_history import log_collection
 from .connectors.mock_connector import MockConnector
 from .connectors.serpapi_connector import SerpAPIJobsConnector
 import os
@@ -94,6 +95,12 @@ def collect_jobs_task():
     keywords = load_keywords()
     if not keywords:
         print("No keywords configured. Skipping job collection.")
+        log_collection(
+            status="skipped",
+            total_jobs=0,
+            keywords=[],
+            error="No keywords configured"
+        )
         return
     
     # Initialize connectors
@@ -127,15 +134,31 @@ def collect_jobs_task():
         all_jobs.extend(jobs)
     
     # Save all jobs to a single CSV file
+    filename = None
     if all_jobs:
         filename = save_jobs_to_csv(all_jobs)
         print(f"[{datetime.now().isoformat()}] Job collection completed. Total jobs: {len(all_jobs)}")
         print(f"    Saved to {filename}")
+        log_collection(
+            status="success",
+            total_jobs=len(all_jobs),
+            keywords=keywords,
+            filename=filename
+        )
     else:
         print(f"[{datetime.now().isoformat()}] No jobs found for any keyword")
+        log_collection(
+            status="warning",
+            total_jobs=0,
+            keywords=keywords,
+            error="No jobs found for any keyword"
+        )
     
     # Update last collection time
     save_collection_time(datetime.now().isoformat())
+    
+    # Clean up old CSV files based on retention policy
+    cleanup_old_csv_files()
 
 
 def init_scheduler():
@@ -241,6 +264,19 @@ def trigger_collection_now() -> dict:
     filename = None
     if all_jobs:
         filename = save_jobs_to_csv(all_jobs)
+        log_collection(
+            status="success",
+            total_jobs=len(all_jobs),
+            keywords=keywords,
+            filename=filename
+        )
+    else:
+        log_collection(
+            status="warning",
+            total_jobs=0,
+            keywords=keywords,
+            error="No jobs found for any keyword"
+        )
     
     # Update last collection time
     save_collection_time(datetime.now().isoformat())
