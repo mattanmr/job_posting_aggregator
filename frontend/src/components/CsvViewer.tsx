@@ -51,6 +51,33 @@ export default function CsvViewer() {
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
+  const handleDelete = (filename: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the file "${filename}"? This action cannot be undone.`
+    );
+    if (confirmed) {
+      deleteFile(filename);
+    }
+  };
+
+  const deleteFile = async (filename: string) => {
+    try {
+        fetch(`/api/csv/${filename}`, {
+          method: "DELETE",
+        }).then((response) => {
+          if (response.ok) {
+            alert("File deleted successfully: " + filename);
+            setFiles(files.filter((file) => file.filename !== filename));
+          } else {
+            alert("Failed to delete file");
+          }
+        });
+      } catch (err: any) {
+        console.error("Failed to delete file:", err);
+        alert("Failed to delete file");
+      }
+    };
+
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>Collected Job Data</h2>
@@ -125,37 +152,36 @@ export default function CsvViewer() {
                       <button
                         onClick={() => handleDownload(file.filename)}
                         disabled={downloading === file.filename}
-                        style={styles.downloadBtn}
+                        style={styles.deleteBtn}
                         title="Download CSV file"
                       >
                         {downloading === file.filename
                           ? "Downloading..."
                           : "Download"}
                       </button>
+                      <button
+                        onClick={() => handleDelete(file.filename)}
+                        style={styles.deleteBtn}
+                        title="Delete CSV file"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Info box */}
-      <div style={styles.infoBox}>
-        <strong>CSV File Contents:</strong>
-        <div style={styles.fieldsList}>
-          • Keyword<br />
-          • Job Title<br />
-          • Company Name<br />
-          • Location<br />
-          • Diploma Required<br />
-          • Years of Experience<br />
-          • Job Posting Link<br />
-          • Posted Date<br />
-          • Description (first 500 characters)<br />
-        </div>
-      </div>
+              </table>
+            </div>
+          )}
+    
+          {/* Info box */}
+          <div style={styles.infoBox}>
+            <strong>CSV File Contents:</strong>
+            <div style={styles.fieldsList}>
+              Keyword, Job Title, Company Name, Location, Diploma Required, Years of Experience, Job Posting Link, Posted Date, Description (first 500 characters)
+            </div>
+          </div>
 
       {/* CSV Preview Modal */}
       {previewFile && (
@@ -283,6 +309,17 @@ const styles = {
   previewBtn: {
     padding: "6px 12px",
     backgroundColor: "#9c27b0",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "500",
+    marginRight: "8px",
+  },
+    deleteBtn: {
+    padding: "6px 12px",
+    backgroundColor: "#d42610ff",
     color: "white",
     border: "none",
     borderRadius: "4px",
