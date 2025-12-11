@@ -178,6 +178,50 @@ async def download_csv_file(filename: str):
     )
 
 
+@router.delete("/api/csv/{filename}")
+async def delete_csv_file(filename: str):
+    """Delete a specific CSV file."""
+    # Validate filename to prevent directory traversal and path injection
+    if not filename or not re.match(r'^jobs_collection_\d{8}_\d{6}\.csv$', filename):
+        print(f"Invalid filename format: {filename}")
+        raise HTTPException(status_code=400, detail="Invalid filename format")
+    
+    filepath = get_csv_file_path(filename)
+    print(f"Getting path for filename: {filename}, result: {filepath}")
+    if not filepath:
+        print(f"File not found for filename: {filename}")
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Additional security: verify resolved path is within data directory
+    try:
+        resolved_path = filepath.resolve()
+        csv_dir = (Path(__file__).parent / "data" / "csv_files").resolve()
+        print(f"Resolved path: {resolved_path}, CSV dir: {csv_dir}")
+        if not str(resolved_path).startswith(str(csv_dir)):
+            print(f"Access denied: path not in CSV directory")
+            raise HTTPException(status_code=403, detail="Access denied")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in path verification: {e}")
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Delete the file
+    try:
+        filepath_str = str(filepath)
+        print(f"Attempting to delete file: {filepath_str}")
+        print(f"File exists before delete: {os.path.exists(filepath_str)}")
+        os.remove(filepath_str)
+        print(f"Successfully deleted file: {filepath_str}")
+        return {"message": f"File {filename} deleted successfully"}
+    except FileNotFoundError:
+        print(f"FileNotFoundError: {filename}")
+        raise HTTPException(status_code=404, detail="File not found")
+    except Exception as e:
+        print(f"Error deleting file {filename}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error deleting file: {str(e)}")
+
+
 # Collection status endpoint
 
 @router.get("/api/next-collection", response_model=CollectionStatus)

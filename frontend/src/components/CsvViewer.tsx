@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getCsvFiles, downloadCsvFile } from "../services/api";
+import { getCsvFiles, downloadCsvFile, deleteCsvFile } from "../services/api";
 import { CsvFileInfo } from "../types";
 import CsvPreview from "./CsvPreview";
 
@@ -62,15 +62,9 @@ export default function CsvViewer() {
 
   const deleteFile = async (filename: string) => {
     try {
-      const response = await fetch(`/api/csv/${filename}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        alert("File deleted successfully: " + filename);
-        setFiles(files.filter((file) => file.filename !== filename));
-      } else {
-        alert("Failed to delete file");
-      }
+      await deleteCsvFile(filename);
+      alert("File deleted successfully: " + filename);
+      setFiles(files.filter((file) => file.filename !== filename));
     } catch (err: any) {
       console.error("Failed to delete file:", err);
       alert("Failed to delete file");
@@ -163,7 +157,12 @@ export default function CsvViewer() {
                         style={styles.deleteBtn}
                         title="Delete CSV file"
                       >
-                        Delete
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          <line x1="10" y1="11" x2="10" y2="17"></line>
+                          <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
                       </button>
                     </div>
                   </td>
@@ -317,7 +316,7 @@ const styles = {
     marginRight: "8px",
   },
     deleteBtn: {
-    padding: "6px 12px",
+    padding: "6px 8px",
     backgroundColor: "#d42610ff",
     color: "white",
     border: "none",
@@ -326,6 +325,9 @@ const styles = {
     fontSize: "12px",
     fontWeight: "500",
     marginRight: "8px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
   actionButtons: {
     display: "flex" as const,

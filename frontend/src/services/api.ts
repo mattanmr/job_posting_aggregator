@@ -156,5 +156,12 @@ export const getCsvPreview = async (
   return response.data;
 };
 
+/**
+ * Delete a CSV file
+ */
+export const deleteCsvFile = async (filename: string): Promise<void> => {
+  await apiClient.delete(`/api/csv/${encodeURIComponent(filename)}`);
+};
+
 export default apiClient;
 
