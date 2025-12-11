@@ -62,21 +62,20 @@ export default function CsvViewer() {
 
   const deleteFile = async (filename: string) => {
     try {
-        fetch(`/api/csv/${filename}`, {
-          method: "DELETE",
-        }).then((response) => {
-          if (response.ok) {
-            alert("File deleted successfully: " + filename);
-            setFiles(files.filter((file) => file.filename !== filename));
-          } else {
-            alert("Failed to delete file");
-          }
-        });
-      } catch (err: any) {
-        console.error("Failed to delete file:", err);
+      const response = await fetch(`/api/csv/${filename}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        alert("File deleted successfully: " + filename);
+        setFiles(files.filter((file) => file.filename !== filename));
+      } else {
         alert("Failed to delete file");
       }
-    };
+    } catch (err: any) {
+      console.error("Failed to delete file:", err);
+      alert("Failed to delete file");
+    }
+  };
 
   return (
     <div style={styles.container}>
@@ -152,7 +151,7 @@ export default function CsvViewer() {
                       <button
                         onClick={() => handleDownload(file.filename)}
                         disabled={downloading === file.filename}
-                        style={styles.deleteBtn}
+                        style={styles.downloadBtn}
                         title="Download CSV file"
                       >
                         {downloading === file.filename
