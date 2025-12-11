@@ -1,4 +1,3 @@
-import Search from "./components/Search";
 import KeywordManager from "./components/KeywordManager";
 import CollectionStatus from "./components/CollectionStatus";
 import SchedulingConfig from "./components/SchedulingConfig";
@@ -63,11 +62,6 @@ export default function App() {
           <CsvViewer />
         </section>
       </div>
-
-      {/* Row 3: Manual Search full width */}
-      <section>
-        <Search />
-      </section>
     </div>
   );
 }
