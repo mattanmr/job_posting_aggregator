@@ -29,6 +29,7 @@ class CsvFileInfo(BaseModel):
     timestamp: str
     size: int
     job_count: int
+    keyword_counts: dict[str, int] = {}  # Per-keyword job counts
 
 
 class CollectionStatus(BaseModel):

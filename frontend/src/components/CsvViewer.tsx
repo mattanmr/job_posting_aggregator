@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import { getCsvFiles, downloadCsvFile } from "../services/api";
+import { getCsvFiles, downloadCsvFile, deleteCsvFile } from "../services/api";
 import { CsvFileInfo } from "../types";
+import CsvPreview from "./CsvPreview";
 
 export default function CsvViewer() {
   const [files, setFiles] = useState<CsvFileInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [previewFile, setPreviewFile] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     loadCsvFiles();
@@ -48,6 +51,26 @@ export default function CsvViewer() {
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
+  const handleDelete = (filename: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete the file "${filename}"? This action cannot be undone.`
+    );
+    if (confirmed) {
+      deleteFile(filename);
+    }
+  };
+
+  const deleteFile = async (filename: string) => {
+    try {
+      await deleteCsvFile(filename);
+      alert("File deleted successfully: " + filename);
+      setFiles(files.filter((file) => file.filename !== filename));
+    } catch (err: any) {
+      console.error("Failed to delete file:", err);
+      alert("Failed to delete file");
+    }
+  };
+
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>Collected Job Data</h2>
@@ -72,6 +95,7 @@ export default function CsvViewer() {
               <tr style={styles.headerRow}>
                 <th style={styles.headerCell}>Collection Date</th>
                 <th style={styles.headerCell}>Job Count</th>
+                <th style={styles.headerCell}>Keywords</th>
                 <th style={styles.headerCell}>File Size</th>
                 <th style={styles.headerCell}>Action</th>
               </tr>
@@ -90,40 +114,81 @@ export default function CsvViewer() {
                   <td style={styles.cell}>
                     <span style={styles.jobCount}>{file.job_count}</span>
                   </td>
+                  <td style={styles.cell}>
+                    <div style={styles.keywordsContainer}>
+                      {Object.entries(file.keyword_counts || {}).map(
+                        ([keyword, count]) => (
+                          <span
+                            key={keyword}
+                            style={styles.keywordTag}
+                            title={`${keyword}: ${count} jobs`}
+                          >
+                            {keyword}: {count}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  </td>
                   <td style={styles.cell}>{formatFileSize(file.size)}</td>
                   <td style={styles.cell}>
-                    <button
-                      onClick={() => handleDownload(file.filename)}
-                      disabled={downloading === file.filename}
-                      style={styles.downloadBtn}
-                      title="Download CSV file"
-                    >
-                      {downloading === file.filename
-                        ? "Downloading..."
-                        : "Download"}
-                    </button>
+                    <div style={styles.actionButtons}>
+                      <button
+                        onClick={() => {
+                          setPreviewFile(file.filename);
+                          setPreviewOpen(true);
+                        }}
+                        style={styles.previewBtn}
+                        title="Preview CSV content"
+                      >
+                        Preview
+                      </button>
+                      <button
+                        onClick={() => handleDownload(file.filename)}
+                        disabled={downloading === file.filename}
+                        style={styles.downloadBtn}
+                        title="Download CSV file"
+                      >
+                        {downloading === file.filename
+                          ? "Downloading..."
+                          : "Download"}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(file.filename)}
+                        style={styles.deleteBtn}
+                        title="Delete CSV file"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          <line x1="10" y1="11" x2="10" y2="17"></line>
+                          <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
-      )}
+              </table>
+            </div>
+          )}
+    
+          {/* Info box */}
+          <div style={styles.infoBox}>
+            <strong>CSV File Contents:</strong>
+            <div style={styles.fieldsList}>
+              Keyword, Job Title, Company Name, Location, Diploma Required, Years of Experience, Job Posting Link, Posted Date, Description (first 500 characters)
+            </div>
+          </div>
 
-      {/* Info box */}
-      <div style={styles.infoBox}>
-        <strong>CSV File Contents:</strong>
-        <div style={styles.fieldsList}>
-          • Job Title<br />
-          • Company Name<br />
-          • Location<br />
-          • Diploma Required<br />
-          • Years of Experience<br />
-          • Job Posting Link<br />
-          • Posted Date<br />
-          • Description (first 500 characters)<br />
-        </div>
-      </div>
+      {/* CSV Preview Modal */}
+      {previewFile && (
+        <CsvPreview
+          filename={previewFile}
+          isOpen={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -238,6 +303,41 @@ const styles = {
     cursor: "pointer",
     fontSize: "12px",
     fontWeight: "500",
+  },
+  previewBtn: {
+    padding: "6px 12px",
+    backgroundColor: "#9c27b0",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "500",
+    marginRight: "8px",
+  },
+    deleteBtn: {
+    padding: "6px 8px",
+    backgroundColor: "#d42610ff",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "12px",
+    fontWeight: "500",
+    marginRight: "8px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionButtons: {
+    display: "flex" as const,
+    gap: "8px",
+    flexWrap: "wrap" as const,
+  },
+  keywordsContainer: {
+    display: "flex" as const,
+    flexWrap: "wrap" as const,
+    gap: "6px",
   },
   infoBox: {
     backgroundColor: "white",

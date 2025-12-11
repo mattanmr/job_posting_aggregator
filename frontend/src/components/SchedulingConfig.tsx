@@ -22,6 +22,11 @@ export default function SchedulingConfig() {
   useEffect(() => {
     loadConfig();
     loadKeywords();
+    
+    // Poll for keyword updates every 2 seconds to detect when keywords are added/removed
+    const keywordPollInterval = setInterval(loadKeywords, 2000);
+    
+    return () => clearInterval(keywordPollInterval);
   }, []);
 
   const loadConfig = async () => {
@@ -92,7 +97,7 @@ export default function SchedulingConfig() {
     setError(null);
   };
 
-  const handleCollectNow = () => {
+  const handleCollectNow = async () => {
     if (keywords.length === 0) {
       setError("No keywords configured. Add keywords first before collecting.");
       return;

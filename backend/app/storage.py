@@ -73,12 +73,13 @@ def remove_keyword(keyword: str) -> bool:
     return False
 
 
-def save_jobs_to_csv(jobs: List[JobPosting]) -> str:
+def save_jobs_to_csv(jobs: List[JobPosting], job_keywords: Dict[str, List[JobPosting]] = None) -> str:
     """
     Save job postings to a single CSV file for the collection cycle.
     
     Args:
         jobs: List of JobPosting objects from all keywords
+        job_keywords: Optional dict mapping keywords to their job lists for tracking per-keyword counts
     
     Returns:
         Filename of the created CSV file
@@ -88,6 +89,7 @@ def save_jobs_to_csv(jobs: List[JobPosting]) -> str:
     filepath = CSV_DIR / filename
     
     fieldnames = [
+        'keyword',
         'title',
         'company',
         'location',
@@ -98,12 +100,28 @@ def save_jobs_to_csv(jobs: List[JobPosting]) -> str:
         'description'
     ]
     
+    # Create a mapping of job to keyword by tracking which job came from which keyword
+    # Use a combination of URL and company to uniquely identify jobs
+    job_to_keyword = {}
+    if job_keywords:
+        for keyword, keyword_jobs in job_keywords.items():
+            for job in keyword_jobs:
+                # Use URL as primary identifier, fallback to title+company combo
+                job_key = job.url if job.url else f"{job.title}_{job.company}"
+                if job_key not in job_to_keyword:  # Only set if not already seen
+                    job_to_keyword[job_key] = keyword
+    
     with open(filepath, 'w', newline='', encoding='utf-8') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         
         for job in jobs:
+            # Find the keyword for this job using the same key generation logic
+            job_key = job.url if job.url else f"{job.title}_{job.company}"
+            keyword = job_to_keyword.get(job_key, 'Unknown')
+            
             writer.writerow({
+                'keyword': keyword,
                 'title': job.title,
                 'company': job.company,
                 'location': job.location,
@@ -119,10 +137,10 @@ def save_jobs_to_csv(jobs: List[JobPosting]) -> str:
 
 def list_csv_files() -> List[Dict[str, any]]:
     """
-    List all CSV files with metadata.
+    List all CSV files with metadata including per-keyword job counts.
     
     Returns:
-        List of dicts with filename, timestamp, and file size
+        List of dicts with filename, timestamp, size, job_count, and keyword_counts
     """
     if not CSV_DIR.exists():
         return []
@@ -140,19 +158,26 @@ def list_csv_files() -> List[Dict[str, any]]:
         except ValueError:
             timestamp = datetime.fromtimestamp(stat.st_mtime)
         
-        # Count jobs in file
+        # Count jobs in file and per-keyword
         job_count = 0
+        keyword_counts = {}
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
-                job_count = sum(1 for _ in csv.DictReader(f))
+                reader = csv.DictReader(f)
+                for row in reader:
+                    job_count += 1
+                    keyword = row.get('keyword', 'Unknown')
+                    keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
         except:
             job_count = 0
+            keyword_counts = {}
         
         files.append({
             'filename': filepath.name,
             'timestamp': timestamp.isoformat(),
             'size': stat.st_size,
-            'job_count': job_count
+            'job_count': job_count,
+            'keyword_counts': keyword_counts
         })
     
     # Sort by timestamp, newest first

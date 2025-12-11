@@ -112,6 +112,7 @@ def collect_jobs_task():
         print("SerpAPI not configured, using mock data only")
     
     all_jobs = []
+    job_keywords = {}  # Track which keyword each job came from
     
     for keyword in keywords:
         print(f"  Collecting jobs for keyword: '{keyword}'")
@@ -131,12 +132,13 @@ def collect_jobs_task():
             jobs = mock.search(keyword)
             print(f"    Using mock data: {len(jobs)} jobs")
         
+        job_keywords[keyword] = jobs  # Store jobs per keyword
         all_jobs.extend(jobs)
     
-    # Save all jobs to a single CSV file
+    # Save all jobs to a single CSV file with keyword tracking
     filename = None
     if all_jobs:
-        filename = save_jobs_to_csv(all_jobs)
+        filename = save_jobs_to_csv(all_jobs, job_keywords)
         print(f"[{datetime.now().isoformat()}] Job collection completed. Total jobs: {len(all_jobs)}")
         print(f"    Saved to {filename}")
         log_collection(
@@ -237,6 +239,7 @@ def trigger_collection_now() -> dict:
         serpapi = None
     
     all_jobs = []
+    job_keywords = {}  # Track which keyword each job came from
     keywords_collected = []
     
     for keyword in keywords:
@@ -254,16 +257,17 @@ def trigger_collection_now() -> dict:
             jobs = mock.search(keyword)
         
         if jobs:
+            job_keywords[keyword] = jobs  # Store jobs per keyword
             all_jobs.extend(jobs)
             keywords_collected.append({
                 "keyword": keyword,
                 "job_count": len(jobs)
             })
     
-    # Save all jobs to a single CSV file
+    # Save all jobs to a single CSV file with keyword tracking
     filename = None
     if all_jobs:
-        filename = save_jobs_to_csv(all_jobs)
+        filename = save_jobs_to_csv(all_jobs, job_keywords)
         log_collection(
             status="success",
             total_jobs=len(all_jobs),
