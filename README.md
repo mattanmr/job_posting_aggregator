@@ -1,3 +1,5 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Python](https://img.shields.io/badge/python-3.10-blue)](https://www.python.org/)
+
 # Job Posting Aggregator
 
 A comprehensive job posting aggregator with automated job collection, keyword management, and CSV data storage. Built with Python FastAPI backend and React/TypeScript frontend.
@@ -319,3 +321,4 @@ Potential improvements for future versions:
 - Search history and analytics
 - User authentication and profiles
 - Rate limiting for API endpoints
+
