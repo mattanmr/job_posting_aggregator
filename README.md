@@ -1,3 +1,5 @@
+<a><img src="https://img.shields.io/badge/License-MIT-yellow.svg"></a> <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10-blue"></a>
+
 # Job Posting Aggregator
 
 A comprehensive job posting aggregator with automated job collection, keyword management, and CSV data storage. Built with Python FastAPI backend and React/TypeScript frontend.
